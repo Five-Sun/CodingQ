@@ -28,12 +28,13 @@ class Main {
         //인덱스 이동은?
         //차이가 M보다 작으면 right++;
         //차이가 M보다 크면 left++;
-        while (left <= right && left < N && right < N) {
+        while (right < N) {
             long sum = arr[right] - arr[left];
             long abs = Math.abs(sum);
 
             if (abs >= M) {
                 answer = Math.min(answer, abs);
+                if (answer == M) break;
                 left++;
             } else {
                 right++;
