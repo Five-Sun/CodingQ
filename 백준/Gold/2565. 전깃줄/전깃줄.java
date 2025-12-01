@@ -1,55 +1,38 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Scanner;
-import java.util.StringTokenizer;
+import java.io.*;
+import java.util.*;
 
 public class Main {
-    static int [][] wire;
-    static Integer [] dp;
-    static Integer [] l_dp;
-    static int N;
+    static int[] dp;
+    static int[][] wires;
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        Scanner sc = new Scanner(System.in);
+        StringTokenizer st;
+        int N = Integer.parseInt(br.readLine());
 
-        int N = sc.nextInt();
-
-        dp = new Integer[N];
-        wire = new int[N][2];
-
-        for (int i = 0; i < N; i++) {
-            wire[i][0] = sc.nextInt();
-            wire[i][1] = sc.nextInt();
+        wires = new int[N + 1][2];
+        dp = new int[N + 1];
+        for (int i = 1; i <= N; i++) {
+            st = new StringTokenizer(br.readLine());
+            wires[i][0] = Integer.parseInt(st.nextToken());
+            wires[i][1] = Integer.parseInt(st.nextToken());
         }
 
-        Arrays.sort(wire, new Comparator<int[]>() {
-            @Override
-            public int compare(int[] o1, int[] o2) {
-                return o1[0] - o2[0];
-            }
+        Arrays.sort(wires, (a, b) -> {
+            return a[0] - b[0];
         });
 
-        int max = 0;
-
-        for (int i = 0; i < N; i++) {
-            max = Math.max(recur(i), max);
-        }
-
-        System.out.println(N - max);
-    }
-    static int recur(int N) {
-        if (dp[N] == null) {
-            dp[N] = 1;
-
-            for (int i = N + 1; i < dp.length; i++) {
-                if (wire[N][1] < wire[i][1]) {
-                    dp[N] = Math.max(dp[N], recur(i) + 1);
+        for (int i = 1; i <= N; i++) {
+            for (int j = 0; j < i; j++) {
+                if (wires[j][1] < wires[i][1]) {
+                    dp[i] = Math.max(dp[i], dp[j] + 1);
                 }
             }
         }
-        return dp[N];
+
+        int max = 0;
+        for (int i = 1; i <= N; i++) {
+            max = Math.max(max, dp[i]);
+        }
+        System.out.println(N - max);
     }
 }
