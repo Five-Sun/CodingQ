@@ -1,106 +1,118 @@
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.ArrayDeque;
+import java.util.Queue;
+import java.util.StringTokenizer;
 
 public class Main {
-	static int N;
-	static int[] counts;
-	static List<Integer>[] graph;
-	static int[] dx = {-1, 0, 1, 0};
-	static int[] dy = {0, -1, 0, 1};
 	
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception{
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		StringTokenizer st = null;
-		StringBuilder sb = new StringBuilder();
+		StringTokenizer st = new StringTokenizer(br.readLine());
 		
-		N = Integer.parseInt(br.readLine());
-		counts = new int[N];
+		int N = Integer.parseInt(st.nextToken());
+		int[] numOfPeple = new int[N+1];
+		int[][] adjlist = new int[N+1][N+1];
 		
 		st = new StringTokenizer(br.readLine());
-		for(int i=0; i<N; i++) {
-			counts[i] = Integer.parseInt(st.nextToken());
+		int sum = 0;
+		int result = Integer.MAX_VALUE;
+		for(int i=1;i<N+1;i++) {
+			  numOfPeple[i] = Integer.parseInt(st.nextToken());
+			  sum+=numOfPeple[i];
 		}
-		
-		graph = new ArrayList[N];
-		for(int i=0; i<N; i++) {
-			graph[i] = new ArrayList<>();
-		}
-		
-		for(int i=0; i<N; i++) {
+		for(int i=1;i<N+1;i++) {
 			st = new StringTokenizer(br.readLine());
-			int c = Integer.parseInt(st.nextToken());
-			
-			for(int j=0; j<c; j++) {
-				int k = Integer.parseInt(st.nextToken());
-				graph[i].add(k -1);
+			int count = Integer.parseInt(st.nextToken());
+			for(int j=0;j<count;j++) {
+				adjlist[i][Integer.parseInt(st.nextToken())] = 1;
 			}
 		}
-		int max = Integer.MAX_VALUE;
-		//1. 조합 탐색하기 ( 1 ~ N/2 )
-		for(int mask = 1; mask < (1 << N); mask++) { // 0 ~ 111111
-			if(Integer.bitCount(mask) <= N / 2) {
-				if(isConnected(mask, true) && isConnected(mask, false)) {
-					int sumA = 0;
-					int sumB = 0;
-					
-					for(int i = 0; i < N; i++) {
-						if((mask & (1 << i)) != 0) {
-							sumA += counts[i];
-						} else {
-							sumB += counts[i];
-						}
-					}
-					max = Math.min(max, Math.abs(sumA - sumB));
+		
+		//구역1,2에 속하는 부분집합 구하기
+		for(int i=1;i<Math.pow(2, N)-1;i++) {
+			boolean[] pick1 = new boolean[N+1];
+			boolean[] pick2 = new boolean[N+1];
+			for(int j=0;j<N;j++) {
+				if((i&(1<<j))!=0) {
+					pick1[j+1] = true;
+				}else {
+					pick2[j+1] = true;
 				}
 			}
+			
+			//각 부분 집합이 연결되어 있는지 bfs로 탐색
+			//1번 구역 확인
+			Queue<Integer> queue = new ArrayDeque<>();
+			boolean[] visited = new boolean[N+1];
+			for(int j=1;j<N+1;j++) {
+				if(pick1[j]) {
+					queue.offer(j);
+					visited[j] = true;
+					break;
+				}
+			}
+			while(!queue.isEmpty()) {
+				int cur = queue.poll();
+				for(int j=1;j<N+1;j++) {
+					if(adjlist[cur][j] == 1 && !visited[j] && pick1[j]) {
+						queue.offer(j);
+						visited[j] = true;
+					}
+				}
+			}
+			//구역 1이 모두 연결되어 있는지 확인하기
+			boolean pick1Link = true;
+			for(int j=1;j<N+1;j++) {
+				if(pick1[j]!=visited[j]) {
+					pick1Link = false;
+					break;
+				}
+			}
+			
+			//2번 구역 확인
+			visited = new boolean[N+1];
+			for(int j=1;j<N+1;j++) {
+				if(pick2[j]) {
+					queue.offer(j);
+					visited[j] = true;
+					break;
+				}
+			}
+			while(!queue.isEmpty()) {
+				int cur = queue.poll();
+				for(int j=1;j<N+1;j++) {
+					if(adjlist[cur][j] == 1 && !visited[j] && pick2[j]) {
+						queue.offer(j);
+						visited[j] = true;
+					}
+				}
+			}
+			
+			boolean pick2Link = true;
+			for(int j=1;j<N+1;j++) {
+				if(pick2[j]!=visited[j]) {
+					pick2Link = false;
+					break;
+				}
+			}
+			
+			//만약 연결되어 있다면?각 구역의 인구수의 합을 구하고 차가 작으면 result를 갱신한다.
+			int numOfPick1 = 0;
+			if(pick1Link && pick2Link) {
+				for(int j=1;j<N+1;j++) {
+					if(pick1[j]) {
+						numOfPick1+=numOfPeple[j];
+					}
+				}
+				result = Math.min(result, Math.abs(sum-numOfPick1 - numOfPick1));
+			}
+			
 		}
-		
-		System.out.println(max == Integer.MAX_VALUE ? -1 : max);
+		if(result == Integer.MAX_VALUE) {
+			result = -1;
+		}
+		System.out.println(result);
 	}
 
-	/** 연결 여부 체크 메소드
-	**  1인 그룹과 0인 그룹을 확인하기, bfs 두번
-	**/
-	static boolean isConnected(int mask, boolean inA) {
-		boolean[] haveToVisit = new boolean[N];
-		int start = -1;
-		for(int i = 0; i < N; i++) {
-			boolean isA = (mask & (1 << i)) != 0;
-			if (isA == inA) {
-				haveToVisit[i] = true;
-				start = i;
-			}
-		}
-		
-		Queue<Integer> q = new ArrayDeque<>();
-		
-		q.offer(start);
-		haveToVisit[start] = false;
-		
-		while(!q.isEmpty()) {
-			int cur = q.poll();
-			
-			for(int next : graph[cur]) {
-				if(haveToVisit[next]) {
-					q.offer(next);
-					haveToVisit[next] = false;
-				}
-			}
-		}
-		
-		for(boolean remain : haveToVisit) {
-			if(remain) {
-				return false;
-			}
-		}
-		
-		return true;
-	}
 }
-//1. 양방향 연결
-//2. 인접한 구역이 없을 수도 있음에 주의
-//3. 인구 차이의 최솟값이므로 비용 계산보단 구현에 가까운 거 같음
-//4. 집합을 구해서 2보다 크면 탐색 불필요
-//5. 이게 그래프의 연결 상태에 따라 구할 수 있는 집합이 달라지므로 단순 집합으로 계산하기 어려워 보임
-//6. 1~N-1개를 고르는 조합과 반대 조합이 가능한지를 확인하며 계산한다?
-//7. 빡구현인가?
