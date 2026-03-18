@@ -3,105 +3,117 @@ import java.util.*;
 
 public class Main {
     static int N, M, K;
-    static Map<String, List<int[]>> map;
-    static PriorityQueue<int[]> q;
-    //0, 1, 2, 3, 4, 5, 6, 7
+
+    // 0, 1, 2, 3, 4, 5, 6, 7
     static int[] dx = {-1, -1, 0, 1, 1, 1, 0, -1};
     static int[] dy = {0, 1, 1, 1, 0, -1, -1, -1};
+
+    static class Fireball {
+        int r, c, m, s, d;
+
+        Fireball(int r, int c, int m, int s, int d) {
+            this.r = r;
+            this.c = c;
+            this.m = m;
+            this.s = s;
+            this.d = d;
+        }
+    }
+
+    static List<Fireball> fireballs;
+
     public static void main(String[] args) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        StringTokenizer st = null;
+        StringTokenizer st = new StringTokenizer(br.readLine());
 
-        st = new StringTokenizer(br.readLine());
         N = Integer.parseInt(st.nextToken());
         M = Integer.parseInt(st.nextToken());
         K = Integer.parseInt(st.nextToken());
 
-        q = new PriorityQueue<>((a, b) -> {
-            if(a[0] != b[0]) return a[0] - b[0];
-            return a[1] - b[1];
-        });
+        fireballs = new ArrayList<>();
 
         for (int i = 0; i < M; i++) {
             st = new StringTokenizer(br.readLine());
+
             int r = Integer.parseInt(st.nextToken()) - 1;
             int c = Integer.parseInt(st.nextToken()) - 1;
             int m = Integer.parseInt(st.nextToken());
             int s = Integer.parseInt(st.nextToken());
             int d = Integer.parseInt(st.nextToken());
 
-            q.offer(new int[]{r, c, m, s, d});
+            fireballs.add(new Fireball(r, c, m, s, d));
         }
 
-        map = new HashMap<>();
-
         while (K-- > 0) {
-            //0. map 초기화
-            map.clear();
-
-            //1. 파이어볼 움직이기
-            move();
-
-            //2. 2개 이상의 파이어볼이 있는 칸에서는 다음과 같은 일이 일어난다.
-            compute();
+            simulate();
         }
 
         int answer = 0;
-        while (!q.isEmpty()) {
-            answer += q.poll()[2];
+        for (Fireball f : fireballs) {
+            answer += f.m;
         }
 
         System.out.println(answer);
     }
 
-    static void move() {
-        while (!q.isEmpty()) {
-            int[] cur = q.poll();
-            int r = cur[0];
-            int c = cur[1];
-            int m = cur[2];
-            int s = cur[3];
-            int d = cur[4];
+    static void simulate() {
+        @SuppressWarnings("unchecked")
+        ArrayList<Fireball>[][] board = new ArrayList[N][N];
 
-            int nr = ((r + dx[d] * s) % N + N) % N;
-            int nc = ((c + dy[d] * s) % N + N) % N;
+        // 1. 이동
+        for (Fireball f : fireballs) {
+            int move = f.s % N;
 
-            String key = nr + "/" + nc;
-            map.computeIfAbsent(key, v -> new ArrayList<>()).add(new int[]{nr, nc, m, s, d});
+            int nr = ((f.r + dx[f.d] * move) % N + N) % N;
+            int nc = ((f.c + dy[f.d] * move) % N + N) % N;
+
+            if (board[nr][nc] == null) {
+                board[nr][nc] = new ArrayList<>();
+            }
+            board[nr][nc].add(new Fireball(nr, nc, f.m, f.s, f.d));
         }
-    }
 
-    static void compute() {
-        for (List<int[]> list : map.values()) {
-            if (list.size() > 1) {
-                int r = list.get(0)[0];
-                int c = list.get(0)[1];
-                int size = list.size();
-                int sSum = 0;
-                int mSum = 0;
-                int dSum = 0;
-                for (int[] fire : list) {
-                    mSum += fire[2];
-                    sSum += fire[3];
-                    if(dCheck(fire[4])) dSum ++;
-                }
-                int newM = mSum / 5;
-                int newS = sSum / size;
+        // 2. 합치기 / 나누기
+        List<Fireball> next = new ArrayList<>();
 
-                if (newM == 0) {
+        for (int r = 0; r < N; r++) {
+            for (int c = 0; c < N; c++) {
+                if (board[r][c] == null) continue;
+
+                int size = board[r][c].size();
+
+                // 하나면 그대로 유지
+                if (size == 1) {
+                    next.add(board[r][c].get(0));
                     continue;
                 }
 
-                for (int i = 0; i < 4; i++) {
-                    q.offer(new int[]{r, c, newM, newS, (dSum == size || dSum == 0) ? i * 2 : (i * 2) + 1});
+                // 두 개 이상이면 합치고 분리
+                int mSum = 0;
+                int sSum = 0;
+                boolean hasEven = false;
+                boolean hasOdd = false;
+
+                for (Fireball f : board[r][c]) {
+                    mSum += f.m;
+                    sSum += f.s;
+
+                    if ((f.d & 1) == 0) hasEven = true;
+                    else hasOdd = true;
                 }
-            } else {
-                q.offer(list.get(0));
+
+                int newM = mSum / 5;
+                if (newM == 0) continue;
+
+                int newS = sSum / size;
+
+                int startDir = (hasEven && hasOdd) ? 1 : 0;
+                for (int d = startDir; d < 8; d += 2) {
+                    next.add(new Fireball(r, c, newM, newS, d));
+                }
             }
         }
-    }
 
-    static boolean dCheck(int d) {
-        return d == 0 || d == 2 || d == 4 || d == 6;
+        fireballs = next;
     }
 }
