@@ -1,0 +1,25 @@
+class Solution {
+    public int solution(int n) {
+        int answer = 0;
+        int[] dp = new int[n + 1];
+        dp[1] = 1;
+        dp[2] = 2;
+
+        if (n <= 2) {
+            return dp[n];
+        }
+
+        for (int i = 3; i <= n; i++) {
+            dp[i] = (dp[i - 2] + dp[i -1]) % 1_000_000_007;
+        }
+
+        return dp[n];
+    }
+}
+/**
+ * 1 = 1가지
+ * 2 = 2가지
+ * 3 = 3가지
+ * 4 = 5가지
+ * 5 =
+ */
